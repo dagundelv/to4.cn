@@ -1,0 +1,66 @@
+RewriteEngine On
+
+# 强制HTTPS (生产环境取消注释)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# API路由
+RewriteRule ^api/(.+)$ api.php?path=$1 [QSA,L]
+
+# 短链接重定向 - 只匹配字母数字组合，避免与其他文件冲突
+RewriteRule ^([a-zA-Z0-9]{6,10})$ redirect.php?code=$1 [QSA,L]
+
+# 默认首页
+DirectoryIndex index.php index.html
+
+# 隐藏PHP扩展名 (修复：添加条件确保不以点开头)
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !^/\.
+RewriteRule ^([^.]+)$ $1.php [NC,L]
+
+# 安全设置 - 禁止访问敏感文件
+<FilesMatch "config\.php|security\.php|database\.sql|\.env">
+    Require all denied
+</FilesMatch>
+
+# 防止访问敏感文件类型
+<FilesMatch "\.(sql|log|bak|env|ini|conf|bak|backup|old|orig|save|swp|tmp)$">
+    Require all denied
+</FilesMatch>
+
+# 防止访问隐藏文件
+#<FilesMatch "^\.">
+#    Require all denied
+#</FilesMatch>
+
+# 防止目录浏览
+Options -Indexes
+
+# 防止服务器信息泄露
+#ServerTokens Prod
+#Header unset Server
+#Header unset X-Powered-By
+
+# 防止某些HTTP方法
+#<LimitExcept GET POST HEAD>
+    #Require all denied
+#</LimitExcept>
+
+# 防止过大的POST请求
+#LimitRequestBody 10485760
+
+# 防止Clickjacking
+#Header always set X-Frame-Options DENY
+
+# 防止MIME类型嗅探
+#Header always set X-Content-Type-Options nosniff
+
+# XSS保护
+#Header always set X-XSS-Protection "1; mode=block"
+
+# 严格传输安全 (HTTPS环境)
+# Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+# 内容安全策略 (修复：使用set而非append，添加分号)
+#Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; img-src 'self' data: chart.googleapis.com; font-src 'self' cdn.jsdelivr.net;"
